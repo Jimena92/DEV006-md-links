@@ -1,13 +1,13 @@
-// Importa la función buscarArchivosMarkdown desde el archivo index.js
-const buscarArchivosMarkdown = require("./index.js");
+// Importa la función SearchMdFiles desde el archivo index.js
+const searchMDFiles = require("./functions.js");
 
 // Definición de la función mdLinks
 function mdLinks(path) {
   return new Promise((resolve, reject) => {
-    // Llama a la función buscarArchivosMarkdown con la ruta especificada
-    buscarArchivosMarkdown(path)
+    // Llama a la función SearchMdFiles con la ruta especificada
+    SearchMdFiles(path)
       .then((result) => {
-        // Resuelve la promesa con el resultado obtenido de buscarArchivosMarkdown
+        // Resuelve la promesa con el resultado obtenido de SearchMdFiles
         resolve(result);
       })
       .catch((error) => {
