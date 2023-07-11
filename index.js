@@ -1,35 +1,59 @@
 const { searchMDFiles, readFileLinks, validateLink } = require("./functions");
 
-// Función principal mdLinks que recibe la ruta y las opciones
-function mdLinks(path, options) {
+// Función mdLinks que recibe una ruta y opciones como parámetros
+function mdLinks(path, options = { validate: false }) {
   return new Promise((resolve, reject) => {
-    // Buscar archivos Markdown en la ruta especificada
+    // Llamada a la función searchMDFiles para buscar archivos Markdown en la ruta especificada
     searchMDFiles(path)
       .then((files) => {
-        // Para cada archivo, leer los links
+        // Para cada archivo encontrado, se crea un array de promesas de links
         const linkPromises = files.map((file) => {
           return readFileLinks(file)
             .then((links) => {
-              // Si se requiere validación, validar los links
+              // Si las opciones incluyen validar los links
               if (options.validate) {
-                const linkValidationPromises = links.map((link) =>
-                  validateLink(link)
-                );
+                // Se crea un array de promesas de validación de links
+                const linkValidationPromises = links.map((link) => {
+                  return validateLink(link).then((result) => ({
+                    ...link,
+                    status: result.status,
+                    ok: result.ok ? "ok" : "fail",
+                  }));
+                });
+                // Se resuelve todas las promesas de validación de links
                 return Promise.all(linkValidationPromises);
               }
+              // Si no se requiere validación, se resuelven los links sin cambios
               return links;
             })
             .catch((error) => {
-              console.error(`Error reading links in file ${file}: ${error}`);
+              console.error(`Error reading links in file ${file}:`, error);
               return [];
             });
         });
 
-        // Esperar a que todas las promesas de links se resuelvan
+        // Se resuelven todas las promesas de links
         Promise.all(linkPromises)
           .then((results) => {
-            // Combinar todos los links en un solo arreglo
-            const flattenedLinks = results.flat();
+            // Se aplana el array de resultados y se realiza la transformación de acuerdo a las opciones
+            const flattenedLinks = results.flat().map((link) => {
+              if (options.validate) {
+                return {
+                  href: link.href,
+                  text: link.text || "Text not found",
+                  file: link.file,
+                  status: link.status,
+                  ok: link.ok,
+                };
+              } else {
+                return {
+                  href: link.href,
+                  text: link.text || "Text not found",
+                  file: link.file,
+                };
+              }
+            });
+            // Se resuelve con los links resultantes
             resolve(flattenedLinks);
           })
           .catch((error) => reject(error));
@@ -38,38 +62,4 @@ function mdLinks(path, options) {
   });
 }
 
-const inputPath = process.argv[2]; // Obtener la ruta del archivo desde la línea de comandos
-
-const options = {
-  validate: false, // Cambiar a `true` o `false` según se requiera
-};
-
-// Llamar a la función mdLinks con la ruta y opciones
-mdLinks(inputPath, options)
-  .then((links) => {
-    if (links.length === 0) {
-      console.log("No links found.");
-    } else {
-      // Iterar sobre cada link y mostrar su información
-      links.forEach((link) => {
-        const linkInfo = {
-          href: link.href,
-          text: link.text || "No text found",
-          file: link.file,
-        };
-
-        // Si se requiere validación, agregar información adicional
-        if (options.validate) {
-          linkInfo.status = link.status;
-          linkInfo.ok = link.ok;
-        }
-
-        console.log(linkInfo);
-      });
-    }
-  })
-  .catch((error) => {
-    console.error(error);
-  });
-
-module.exports = { mdLinks };
+module.exports = mdLinks;

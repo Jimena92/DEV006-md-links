@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const colors = require("ansi-colors");
 
 // Función para leer los links en un archivo Markdown
 function readFileLinks(fileRoute) {
@@ -10,18 +11,20 @@ function readFileLinks(fileRoute) {
         reject(`Error reading file: ${err}`);
       } else {
         // Buscar URLs en el texto utilizando expresión regular
-        const urlRegex = /\[([^\]]+)\]\(([^\)]+)\)/g;
-        const matches = data.matchAll(urlRegex);
-        for (const match of matches) {
-          const text = match[1]; // Obtener el texto del enlace
-          const href = match[2]; // Obtener la URL del enlace
-          links.push({ href, text, file: fileRoute });
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        const matches = data.match(urlRegex);
+        if (matches) {
+          matches.forEach((match) => {
+            // Agregar cada URL encontrada a la lista de links
+            links.push({ href: match, file: fileRoute });
+          });
         }
         resolve(links);
       }
     });
   });
 }
+
 // Función para validar un link utilizando fetch
 function validateLink(link) {
   return fetch(link.href)
@@ -60,35 +63,43 @@ function searchMDFiles(input) {
       input = path.resolve(input);
     }
 
-    // Verificar si el directorio existe
-    fs.access(input, fs.constants.F_OK, (error) => {
+    // Verificar si el input es un archivo o un directorio
+    fs.stat(input, (error, stats) => {
       if (error) {
-        reject(`${input} does not exist`);
+        reject(`Error accessing path: ${error}`);
       } else {
-        // Leer el contenido del directorio
-        fs.readdir(input, (error, files) => {
-          if (error) {
-            reject(`Error reading directory: ${error}`);
-          } else {
-            const markdownFiles = []; // Array para almacenar las rutas completas de los archivos Markdown encontrados
-
-            // Recorrer los archivos en el directorio
-            files.forEach((file) => {
-              const completeRoute = path.join(input, file); // Construir la ruta completa del archivo o subdirectorio
-
-              // Verificar si es un archivo y tiene extensión ".md" (Markdown)
-              if (fs.statSync(completeRoute).isFile() && path.extname(file) === ".md") {
-                markdownFiles.push(completeRoute); // Agregar la ruta completa del archivo Markdown al array 'markdownFiles'
-              }
-            });
-
-            if (markdownFiles.length === 0) {
-              reject("No MD links found");
+        if (stats.isFile()) {
+          // Si es un archivo, resolver con la ruta del archivo como un array
+          resolve([input]);
+        } else if (stats.isDirectory()) {
+          // Si es un directorio, leer el contenido del directorio
+          fs.readdir(input, (error, files) => {
+            if (error) {
+              reject(`Error reading directory: ${error}`);
             } else {
-              resolve(markdownFiles);
+              const markdownFiles = []; // Array para almacenar las rutas completas de los archivos Markdown encontrados
+
+              // Recorrer los archivos en el directorio
+              files.forEach((file) => {
+                const completeRoute = path.join(input, file); // Construir la ruta completa del archivo o subdirectorio
+
+                // Verificar si es un archivo y tiene extensión ".md" (Markdown)
+                if (fs.statSync(completeRoute).isFile() && path.extname(file) === ".md") {
+                  markdownFiles.push(completeRoute); // Agregar la ruta completa del archivo Markdown al array 'markdownFiles'
+                }
+              });
+
+              if (markdownFiles.length === 0) {
+                reject("No MD links found");
+              } else {
+                console.log(colors.blue("These are the MD files and links!")); // Imprimir mensaje en consola
+                resolve(markdownFiles);
+              }
             }
-          }
-        });
+          });
+        } else {
+          reject("Invalid path");
+        }
       }
     });
   });
@@ -99,7 +110,3 @@ module.exports = {
   readFileLinks, // Función para leer los links en un archivo Markdown
   validateLink, // Función para validar un link utilizando fetch
 };
-
-
-
-
