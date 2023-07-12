@@ -1,4 +1,4 @@
-const { searchMDFiles, readFileLinks, validateLink } = require("./functions");
+const { searchMDFiles, readFileLinks, validateLink } = require("./functions"); // Importar las funciones necesarias desde el módulo "functions"
 
 // Función mdLinks que recibe una ruta y opciones como parámetros
 function mdLinks(path, options = { validate: false }) {
@@ -20,14 +20,14 @@ function mdLinks(path, options = { validate: false }) {
                     ok: result.ok ? "ok" : "fail",
                   }));
                 });
-                // Se resuelve todas las promesas de validación de links
+                // Se resuelven todas las promesas de validación de links
                 return Promise.all(linkValidationPromises);
               }
               // Si no se requiere validación, se resuelven los links sin cambios
               return links;
             })
             .catch((error) => {
-              console.error(`Error reading links in file ${file}:`, error);
+              console.error(`Error reading links in file ${file}:`, error); // Imprimir un mensaje de error en la consola en caso de un error al leer los links en el archivo
               return [];
             });
         });
@@ -56,10 +56,10 @@ function mdLinks(path, options = { validate: false }) {
             // Se resuelve con los links resultantes
             resolve(flattenedLinks);
           })
-          .catch((error) => reject(error));
+          .catch((error) => reject(error)); // Si hay un error al resolver las promesas de links, se rechaza la promesa principal con el error
       })
-      .catch((error) => reject(error));
+      .catch((error) => reject(error)); // Si hay un error al buscar archivos Markdown, se rechaza la promesa principal con el error
   });
 }
 
-module.exports = mdLinks;
+module.exports = mdLinks; // Exportar la función mdLinks como módulo

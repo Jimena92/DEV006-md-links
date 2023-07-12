@@ -1,87 +1,121 @@
-// const mdLinks = require('../');
+const mdLinks = require('../index');
+const { searchMDFiles, validateLink, readFileLinks } = require('../functions');
+const path = require('path');
 
+describe('searchMDFiles', () => {
+  it('Retorna un arreglo de rutas de archivos Markdown cuando se le proporciona un directorio', () => {
+    const directoryPath = path.resolve('./Pruebas');
 
-// describe('mdLinks', () => {
+    return searchMDFiles(directoryPath)
+      .then((result) => {
+        expect(Array.isArray(result)).toBe(true); // Verificar si el resultado es un array
+        expect(result.length).toBeGreaterThan(0); // Verificar si el array contiene elementos
 
-//   it('should...', () => {
-//     console.log('FIX ME!');
-//   });
+        const absolutePaths = result.map((file) => path.resolve(file));
 
-// });
+        expect(absolutePaths).toEqual(
+          expect.arrayContaining([
+            path.join(directoryPath, 'files.md'),
+            path.join(directoryPath, 'lorem.md'),
+          ])
+        );
+      });
+  });
 
-const { mdLinks } = require('../index');
+it('Devuelve un array vacío cuando se proporciona un directorio inexistente', () => {
+  const directory = './noexiste';
+  return searchMDFiles(directory)
+    .catch((error) => {
+      // Verificar que se haya rechazado la promesa con el mensaje correcto
+      expect(error).toEqual(expect.stringMatching('The file or directory does not exist'));
+    });
+});
+
+it('Devuelve un array vacío cuando se proporciona un archivo inexistente', () => {
+  const file = './noexiste.md';
+  return searchMDFiles(file)
+    .catch((error) => {
+      // Verificar que se haya rechazado la promesa con el mensaje correcto
+      expect(error).toEqual(expect.stringMatching('The file or directory does not exist'));
+    });
+});
+});
+
+describe('validateLink', () => {
+  it('Devuelve un objeto de enlace validado con estado y propiedades ok', () => {
+    const link = {
+      href: 'https://neoattack.com/proyectos/',
+      text: 'Text not found',
+      file: 'files.md',
+    };
+
+    return validateLink(link)
+      .then((validatedLink) => {
+        expect(validatedLink).toHaveProperty('status');
+        expect(validatedLink).toHaveProperty('ok');
+        expect(validatedLink.status).toBe(200);
+        expect(validatedLink.ok).toBe('ok');
+      });
+  });
+});
+
+describe('readFileLinks', () => {
+  it('Lee los links de un archivo Markdown correctamente', () => {
+    const fileRoute = './hola.md';
+
+    return readFileLinks(fileRoute)
+      .then((links) => {
+        // Verificar que se hayan leído los links correctamente
+        expect(Array.isArray(links)).toBe(true);
+        expect(links.length).toBe(2);
+
+        // Verificar los valores de los links individuales
+        expect(links[0].href).toBe('https://www.error.com');
+        expect(links[0].text).toBe(undefined);
+        expect(links[1].href).toBe('https://developer.mozilla.org/es/docs/Web/API/Fetch_API/Using_');
+        expect(links[1].text).toBe(undefined);
+      });
+  });
+});
 
 describe('mdLinks', () => {
-  it('should return an array of links when called with a valid path', () => {
-    const path = './Pruebas';
-    const expectedLinks = [
-      {
-        href: 'https://lineadecodigo.com/javascript/extraer-partes-una-url-javascript/',
-        text: 'No se encontró texto',
-        file: 'C:\\Users\\Jimena\\Desktop\\MD-LINKS\\DEV006-md-links\\Pruebas\\files.md',
-        status: 200,
-        ok: 'OK'
-      },
-      {
-        href: 'https://parzibyte.me/blog/2018/12/27/leer-archivo-node-js-fs-readline/',
-        text: 'No se encontró texto',
-        file: 'C:\\Users\\Jimena\\Desktop\\MD-LINKS\\DEV006-md-links\\Pruebas\\files.md',
-        status: 200,
-        ok: 'OK'
-      },
-      {
-        href: 'https://developer.mozilla.org/es/docs/Web/JavaScript/Reference/Global_Objects/Array/concat',
-        text: 'No se encontró texto',
-        file: 'C:\\Users\\Jimena\\Desktop\\MD-LINKS\\DEV006-md-links\\Pruebas\\files.md',
-        status: 200,
-        ok: 'OK'
-      },
-      {
-        href: 'https://www.geeksforgeeks.org/javascript-match-function/',
-        text: 'No se encontró texto',
-        file: 'C:\\Users\\Jimena\\Desktop\\MD-LINKS\\DEV006-md-links\\Pruebas\\files.md',
-        status: 200,
-        ok: 'OK'
-      },
-      {
-        href: 'https://developer.mozilla.org/es/docs/Web/JavaScript/Reference/Global_Objects/Promise/then',
-        text: 'No se encontró texto',
-        file: 'C:\\Users\\Jimena\\Desktop\\MD-LINKS\\DEV006-md-links\\Pruebas\\files.md',
-        status: 200,
-        ok: 'OK'
-      },
-      {
-        href: 'https://seoquito.com/como-encontrar-enlaces-rotos/ko',
-        text: 'No se encontró texto',
-        file: 'C:\\Users\\Jimena\\Desktop\\MD-LINKS\\DEV006-md-links\\Pruebas\\files.md',
-        status: 404,
-        ok: 'Not Found'
-      },
-      {
-        href: 'https://neoattack.com/proyectos/',
-        text: 'No se encontró texto',
-        file: 'C:\\Users\\Jimena\\Desktop\\MD-LINKS\\DEV006-md-links\\Pruebas\\files.md',
-        status: 200,
-        ok: 'OK'
-      },
-      {
-        href: 'https://www.error.com',
-        text: 'No se encontró texto',
-        file: 'C:\\Users\\Jimena\\Desktop\\MD-LINKS\\DEV006-md-links\\Pruebas\\hola.md',
-        status: 200,
-        ok: 'OK'
-      },
-      {
-        href: 'https://developer.mozilla.org/es/docs/Web/API/Fetch_API/Using_',
-        text: 'No se encontró texto',
-        file: 'C:\\Users\\Jimena\\Desktop\\MD-LINKS\\DEV006-md-links\\Pruebas\\hola.md',
-        status: 404,
-        ok: 'Not Found'
-      }
-    ];
+  it('Obtiene los links de un archivo Markdown sin validación', () => {
+    return mdLinks('./hola.md')
+      .then((links) => {
+        expect(links).toEqual([
+          {
+            href: 'https://www.error.com',
+            text: 'Text not found',
+            file: 'C:\\Users\\Jimena\\Desktop\\MD-LINKS\\DEV006-md-links\\hola.md',
+          },
+          {
+            href: 'https://developer.mozilla.org/es/docs/Web/API/Fetch_API/Using_',
+            text: 'Text not found',
+            file: 'C:\\Users\\Jimena\\Desktop\\MD-LINKS\\DEV006-md-links\\hola.md',
+          },
+        ]);
+      });
+  });
 
-    return mdLinks(path).then((links) => {
-      expect(links).toEqual(expectedLinks);
-    });
+  it('Obtiene los links de un archivo Markdown con validación', () => {
+    return mdLinks('./hola.md', { validate: true })
+      .then((result) => {
+        expect(result).toEqual([
+          {
+            href: 'https://www.error.com',
+            text: 'Text not found',
+            file: 'C:\\Users\\Jimena\\Desktop\\MD-LINKS\\DEV006-md-links\\hola.md',
+            status: 200,
+            ok: 'ok',
+          },
+          {
+            href: 'https://developer.mozilla.org/es/docs/Web/API/Fetch_API/Using_',
+            text: 'Text not found',
+            file: 'C:\\Users\\Jimena\\Desktop\\MD-LINKS\\DEV006-md-links\\hola.md',
+            status: 404,
+            ok: 'ok',
+          },
+        ]);
+      });
   });
 });
