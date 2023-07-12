@@ -22,23 +22,33 @@ describe('searchMDFiles', () => {
       });
   });
 
-it('Devuelve un array vacío cuando se proporciona un directorio inexistente', () => {
-  const directory = './noexiste';
-  return searchMDFiles(directory)
-    .catch((error) => {
-      // Verificar que se haya rechazado la promesa con el mensaje correcto
-      expect(error).toEqual(expect.stringMatching('The file or directory does not exist'));
-    });
-});
+  it('Devuelve un array vacío cuando se proporciona un directorio inexistente', () => {
+    const directory = './noexiste';
+    return searchMDFiles(directory)
+      .catch((error) => {
+        // Verificar que se haya rechazado la promesa con el mensaje correcto
+        expect(error).toEqual(expect.stringMatching('The file or directory does not exist'));
+      });
+  });
 
-it('Devuelve un array vacío cuando se proporciona un archivo inexistente', () => {
-  const file = './noexiste.md';
-  return searchMDFiles(file)
-    .catch((error) => {
-      // Verificar que se haya rechazado la promesa con el mensaje correcto
-      expect(error).toEqual(expect.stringMatching('The file or directory does not exist'));
-    });
-});
+  it('Devuelve un array vacío cuando se proporciona un archivo inexistente', () => {
+    const file = './noexiste.md';
+    return searchMDFiles(file)
+      .catch((error) => {
+        // Verificar que se haya rechazado la promesa con el mensaje correcto
+        expect(error).toEqual(expect.stringMatching('The file or directory does not exist'));
+      });
+  });
+
+  it('Devuelve un array vacío cuando se proporciona una entrada inválida', () => {
+    const invalidInput = 123; // Entrada inválida (no es una cadena)
+
+    return searchMDFiles(invalidInput)
+      .catch((error) => {
+        // Verificar que se haya rechazado la promesa con el mensaje correcto
+        expect(error).toBe('Path must be a string');
+      });
+  });
 });
 
 describe('validateLink', () => {
@@ -61,6 +71,16 @@ describe('validateLink', () => {
 
 describe('readFileLinks', () => {
   it('Lee los links de un archivo Markdown correctamente', () => {
+    // Mock de la función fs.readFile
+    jest.mock('fs', () => ({
+      readFile: (file, options, callback) => {
+        const data = `Enlaces del archivo:
+- [Enlace 1](https://www.error.com)
+- [Enlace 2](https://developer.mozilla.org/es/docs/Web/API/Fetch_API/Using_)`;
+        callback(null, data);
+      },
+    }));
+
     const fileRoute = './hola.md';
 
     return readFileLinks(fileRoute)
