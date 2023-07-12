@@ -58,6 +58,7 @@ mdLinks("./some/example.md", { validate: true })
     // => [{ href, text, file, status, ok }, ...]
   })
   .catch(console.error);
+```
 
 ## Diagrama de Flujo
 
